@@ -10,6 +10,9 @@ const cookieParser = require("cookie-parser")
 require('dotenv').config()
 require('./socket/socket')
 
+const http = require('http');
+const server = http.createServer(app)
+
 connect_to_mongoDB()
 
 app.use(express.json())
@@ -24,3 +27,5 @@ app.use('/group', group_router)
 app.use('/message', message_router)
 
 app.listen('3000')
+
+module.exports = {server}

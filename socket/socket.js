@@ -5,13 +5,9 @@ const jwt = require('jsonwebtoken')
 const parse_cookie = require('../utils/parsecookie')
 const User = require('../models/user')
 const userid_to_socket = require('../utils/useridtosocket')
+const {server} = require('../index')
 
-const io = new socketio.Server(5000, {
-  cors: {
-    origin: 'http://localhost:5173',
-    credentials: true
-  }
-})
+const io = new socketio.Server(server)
 
 const auth = async (socket) => {
   try {
