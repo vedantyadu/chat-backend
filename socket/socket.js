@@ -4,10 +4,11 @@ const online_user = require('../utils/onlineusers')
 const jwt = require('jsonwebtoken')
 const parse_cookie = require('../utils/parsecookie')
 const User = require('../models/user')
+const userid_to_socket = require('../utils/useridtosocket')
 
 const io = new socketio.Server(5000, {
   cors: {
-    origin: 'http://127.0.0.1:5173',
+    origin: 'http://localhost:5173',
     credentials: true
   }
 })
@@ -18,9 +19,9 @@ const auth = async (socket) => {
     const decoded_jwt = jwt.verify(cookie.token, process.env.JWT_PRIVATE_KEY)
 
     if (decoded_jwt.id) {
-
       socket.userid = decoded_jwt.id
       socket.groups = []
+      userid_to_socket[decoded_jwt.id] = socket
       online_user.add(socket.userid)
       
       const {groups} = await User.findById(socket.userid) || []
@@ -28,13 +29,13 @@ const auth = async (socket) => {
       groups.map((group) => {
         const groupid = group.toString()
         socket.join(groupid)
-        socket.to(groupid).emit('user-online', {userid: socket.userid})
         socket.groups.push(groupid)
+        io.to(groupid).emit('user-online', {userid: socket.userid, groupid: groupid})
       })
     }
   }
   catch (err) {
-    console.log(err)
+
   }
 }
 
@@ -43,9 +44,16 @@ io.on('connection', async (socket) => {
   await auth(socket)
 
   socket.on('disconnect', () => {
-    socket.groups.map((group) => {
-      socket.to(group).emit('user-offline', {userid: socket.userid})
+    if (socket?.groups) {
+      socket?.groups.map((group) => {
+        io.to(group).emit('user-offline', {userid: socket.userid, groupid: group})
+      })
       online_user.delete(socket.userid)
-    })
+      delete userid_to_socket[socket.userid]
+    }
   })
+
 })
+
+
+module.exports = io

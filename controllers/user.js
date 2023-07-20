@@ -5,13 +5,14 @@ const hash = require('../utils/hash')
 const jwt = require('jsonwebtoken')
 const sharp = require('sharp')
 const User = require('../models/user')
-
+const io = require('../socket/socket')
+const userid_to_socket = require('../utils/useridtosocket')
 
 const login = async (req, res) => {
-  const {username, password} = req.body
   try {
+    const {username, password} = req.body
     const result = await User.findOne({
-      'username': username,
+      '$or': [{'username': username}, {'email': username}],
       'password': hash(password)
     })
     if (result) {
@@ -19,26 +20,38 @@ const login = async (req, res) => {
       res.cookie('token', token, {httpOnly: true, secure: false, expires: new Date(Date.now() + 99999999)}).status(200).send()
     }
     else {
-      res.status(401).send()
+      res.status(401).send({'message': 'Invalid username or password.'})
     }
   }
   catch (err) {
-    res.status(500).send()
+    res.status(500).send({'message': 'Internal server error.'})
   }
 }
 
 const signup = async (req, res) => {
-  const {username, password, email} = req.body
   try {
-    await User.create({
-      'username': username,
-      'password': hash(password),
-      'email': email
-    })
-    res.status(200).send()
+    const {username, password, email} = req.body
+    const result = await User.findOne({$or: [{'email': email}, {'username': username}]})
+    if (result) {
+      if (result.email == email) {
+        res.status(409).send({message: 'Email already taken.'})
+      }
+      else if (result.username == username) {
+        res.status(409).send({message: 'Username already taken.'})
+      }
+    }
+    else {
+      await User.create({
+        'username': username,
+        'password': hash(password),
+        'email': email
+      })
+      res.send({message: 'Signup successful.'})
+    }
   }
   catch (err) {
-    res.status(500).send()
+    console.log(err)
+    res.status(500).send({message: 'Internal server error.'})
   }
 }
 
@@ -50,43 +63,73 @@ const auth = async (req, res) => {
   if (req.cookies.token) {
     try {
       const user = await User.findById(req.userid)
-      if (user) res.status(200).send()
+      if (user) {
+        res.status(200).send({message: 'Auth successful.'})
+      }
+      else {
+        res.status(401).send({message: 'User unauthorized.'})
+      }
     }
     catch(err) {
-      res.status(500).send()
+      res.status(500).send({message: 'Server error while authorizing.'})
     }
   }
-  res.status(401).send()
-}
-
-const get_details = async (req, res) => {
-  try {
-    const {username, email, image} = await User.findById(req.userid)
-    res.status(200).send({image, 'details': {username, email}})
-  }
-  catch(err) {
-    res.status(500).send()
+  else {
+    res.status(401).send({message: 'User unauthorized.'})
   }
 }
 
 const edit_details = async (req, res) => {
   try {
-    const {username, email} = JSON.parse(req.body.details)
-    await User.findByIdAndUpdate(req.userid, {'username': username, 'email': email})
-
-    if (req.file) {
-      const buffer = await sharp(req.file.buffer).jpeg().resize({height: 400, width: 400}).toBuffer()
-      const storageRef = ref(storage, `profile/${req.userid}.jpeg`)
-      const metadata = {contentType: 'jpeg'}
-      const snapshot = await uploadBytesResumable(storageRef, buffer, metadata)
-      const downloadURL = await getDownloadURL(snapshot.ref)
-      await User.findByIdAndUpdate(req.userid, {'image': downloadURL})
+    const {username, status} = JSON.parse(req.body.details)
+    const existing_user = await User.findOne({username})
+    if (existing_user && existing_user.id != req.userid) {
+      res.status(409).send({message: 'Username already taken.'})
     }
-    res.status(200).send()
+    else {
+      let newimage
+      await User.findByIdAndUpdate(req.userid, {'username': username, 'status': status})
+  
+      if (req.file) {
+        const buffer = await sharp(req.file.buffer).jpeg().resize({height: 400, width: 400}).toBuffer()
+        const storageRef = ref(storage, `profile/${req.userid}.jpeg`)
+        const metadata = {contentType: 'jpeg'}
+        const snapshot = await uploadBytesResumable(storageRef, buffer, metadata)
+        const downloadURL = await getDownloadURL(snapshot.ref)
+        await User.findByIdAndUpdate(req.userid, {'image': downloadURL})
+        newimage = downloadURL
+      }
+      if (userid_to_socket[req.userid]?.groups) {
+        userid_to_socket[req.userid].groups.forEach(groupid => {
+          io.to(groupid).emit('user-change', {groupid, userid: req.userid, username, status, image: newimage})
+        })
+      }
+      res.status(200).send({newimage})
+    }
   }
   catch (err) {
-    res.status(500).send()
+    res.status(500).send({message: 'Server error while updating profile.'})
   }
 }
 
-module.exports = {login, signup, logout, auth, get_details, edit_details}
+const get_details = async (req, res) => {
+  try {
+    const {image, status, username} = await User.findById(req.userid)
+    res.status(200).send({userid: req.userid, image, status, username})
+  }
+  catch (err) {
+    res.status(500).send({message: 'Internal server error.'})
+  }
+}
+
+const get_groups = async (req, res) => {
+  try {
+    const {groups} = await User.findById(req.userid)
+    res.status(200).send({groups})
+  }
+  catch (err) {
+    res.status(500).send({message: 'Server error while getting groups.'})
+  }
+}
+
+module.exports = {login, signup, logout, auth, edit_details, get_details, get_groups}
