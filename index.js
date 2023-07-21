@@ -9,18 +9,14 @@ const connect_to_mongoDB = require('./mongoconfig')
 const cookieParser = require("cookie-parser")
 require('dotenv').config()
 
-const http = require('http');
-const server = http.Server(app)
-
-
-const socketio = require('socket.io')
 const online_user = require('./utils/onlineusers')
 const jwt = require('jsonwebtoken')
 const parse_cookie = require('./utils/parsecookie')
 const User = require('./models/user')
 const userid_to_socket = require('./utils/useridtosocket')
 
-const io = new socketio.Server(server)
+const server = require('http').Server(app)
+const io = require("socket.io")(server)
 
 const auth = async (socket) => {
   try {
@@ -78,6 +74,6 @@ app.use('/user', user_router)
 app.use('/group', group_router)
 app.use('/message', message_router)
 
-app.listen('3000')
+app.listen(3000)
 
 module.exports = io
