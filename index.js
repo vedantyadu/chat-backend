@@ -29,7 +29,7 @@ app.use(cors({
   credentials: true
 }))
 
-
+app.set('io', io)
 app.use('/user', user_router)
 app.use('/group', group_router)
 app.use('/message', message_router)

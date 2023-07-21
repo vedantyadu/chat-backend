@@ -5,6 +5,7 @@ const parse_cookie = require('../utils/parsecookie')
 const User = require('../models/user')
 const userid_to_socket = require('../utils/useridtosocket')
 
+
 const auth = async (socket) => {
   try {
     const cookie = parse_cookie(socket.handshake.headers.cookie)

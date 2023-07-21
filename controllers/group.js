@@ -9,7 +9,6 @@ const Group = require('../models/group')
 const Message = require('../models/message')
 const online_user = require('../utils/onlineusers')
 const userid_to_socket = require('../utils/useridtosocket')
-const io = require('../index')
 
 
 const is_admin = async (group_id, user_id) => {
@@ -47,7 +46,7 @@ const create_group = async (req, res) => {
 
     userid_to_socket[req.userid].join(new_group.id)
     userid_to_socket[req.userid].groups.push(new_group.id)
-    io.to(userid_to_socket[req.userid].id).emit('new-group', response_object)
+    req.app.get('io').to(userid_to_socket[req.userid].id).emit('new-group', response_object)
 
     res.status(200).send(response_object)
   }
@@ -124,7 +123,7 @@ const delete_group = async (req, res) => {
       }catch (err) {}
       userid_to_socket[req.userid].leave(req.body.id)
       userid_to_socket[req.userid].groups = userid_to_socket[req.userid].groups.filter(id => id != req.id)
-      io.to(req.body.id).emit('group-delete', {groupid: req.body.id})
+      req.app.get('io').to(req.body.id).emit('group-delete', {groupid: req.body.id})
 
       res.status(200).send({message: 'Group deleted.'})
     }
@@ -156,7 +155,7 @@ const edit_group = async (req, res) => {
         newimage = downloadURL
       }
 
-      io.to(group.id).emit('group-change', {groupid: group.id, description: group_data.description, name: group_data.groupname, image: newimage})
+      req.app.get('io').to(group.id).emit('group-change', {groupid: group.id, description: group_data.description, name: group_data.groupname, image: newimage})
 
       res.status(200).send({newimage})
     }
@@ -176,7 +175,7 @@ const add_user = async (req, res) => {
       const user = await User.findOneAndUpdate({'username': username}, {$addToSet: {'groups': groupid}})
       if (user) {
         const {name, image, description} = await Group.findByIdAndUpdate(groupid, {$addToSet: {members: user.id}, $pull: {previous_members: user.id}})
-        io.to(groupid).emit('member-added', {
+        req.app.get('io').to(groupid).emit('member-added', {
           groupid,
           userid: user.id,
           details: {username: user.username, image: user.image, online: online_user.has(user.id.toString()), status: user.status, current_member: true},
@@ -184,12 +183,12 @@ const add_user = async (req, res) => {
 
         const new_message = await Message.create({message: '', author: user.id, type: 'join', group: groupid})
         
-        io.to(groupid).emit('new-message', {details: {author: user.id, message: '', type: new_message.type, messageid: new_message.id}, groupid})
+        req.app.get('io').to(groupid).emit('new-message', {details: {author: user.id, message: '', type: new_message.type, messageid: new_message.id}, groupid})
         
         if (online_user.has(user.id)) {
           userid_to_socket[user.id].join(groupid)
           userid_to_socket[user.id].groups.push(groupid)
-          io.to(userid_to_socket[user.id].id).emit('group-invite', {
+          to(userid_to_socket[user.id].id).emit('group-invite', {
             groupid: groupid,
             details: {name, image, description, admin: false}
           })
@@ -217,12 +216,12 @@ const remove_user = async (req, res) => {
       await Group.findByIdAndUpdate(groupid, {$pull: {members: userid}, $addToSet: {previous_members: userid}})
 
       if (online_user.has(userid)) {
-        io.to(userid_to_socket[userid].id).emit('group-remove', {groupid})
+        req.app.get('io').to(userid_to_socket[userid].id).emit('group-remove', {groupid})
       }
-      io.to(groupid).emit('member-removed', {groupid, userid})
+      req.app.get('io').to(groupid).emit('member-removed', {groupid, userid})
 
       const new_message = await Message.create({message: '', author: userid, type: 'leave', group: groupid}) 
-      io.to(groupid).emit('new-message', {details: {author: userid, message: '', type: new_message.type, messageid: new_message.id}, groupid})
+      req.app.get('io').to(groupid).emit('new-message', {details: {author: userid, message: '', type: new_message.type, messageid: new_message.id}, groupid})
       
       res.status(200).send({message: 'User removed successfully.'})
     }
@@ -248,9 +247,9 @@ const leave_group = async (req, res) => {
       await Group.findByIdAndUpdate(req.body.id, {$pull: {members: req.userid}, $addToSet: {previous_members: req.userid}})
       userid_to_socket[req.userid].groups = userid_to_socket[req.userid].groups.filter(id => id != req.id)
       userid_to_socket[req.userid].leave(req.id)
-      io.to(req.body.id).emit('user-left', {userid: req.userid, groupid: req.body.id})
+      req.app.get('io').to(req.body.id).emit('user-left', {userid: req.userid, groupid: req.body.id})
       const new_message = await Message.create({message: '', author: req.userid, type: 'leave', group: req.body.id}) 
-        io.to(req.body.id).emit('new-message', {details: {author: req.userid, message: '', type: new_message.type, messageid: new_message.id}, groupid: req.body.id})
+      req.app.get('io').to(req.body.id).emit('new-message', {details: {author: req.userid, message: '', type: new_message.type, messageid: new_message.id}, groupid: req.body.id})
       res.status(200).send({message: 'User left the group successfully.'})
     }
     catch (err) {
@@ -272,7 +271,7 @@ const leave_group = async (req, res) => {
         }
         userid_to_socket[req.userid].groups = userid_to_socket[req.userid].groups.filter(id => id != req.id)
         userid_to_socket[req.userid].leave(req.id)
-        io.to(req.body.id).emit('user-left', {userid: req.userid, groupid: req.body.id})
+        req.app.get('io').to(req.body.id).emit('user-left', {userid: req.userid, groupid: req.body.id})
       }
       else {
         try {
@@ -283,13 +282,12 @@ const leave_group = async (req, res) => {
       }
 
       const new_message = await Message.create({message: '', author: req.userid, type: 'leave', group: req.body.id}) 
-      io.to(req.body.id).emit('new-message', {details: {author: req.userid, message: '', type: new_message.type, messageid: new_message.id}, groupid: req.body.id})
+      req.app.get('io').to(req.body.id).emit('new-message', {details: {author: req.userid, message: '', type: new_message.type, messageid: new_message.id}, groupid: req.body.id})
 
       res.status(200).send({message: 'User left the group successfully.'})
       
     }
     catch (err) {
-      console.log(err)
       res.status(500).send({message: 'Server error while leaving group.'})
     }
   }

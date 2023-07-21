@@ -5,7 +5,6 @@ const hash = require('../utils/hash')
 const jwt = require('jsonwebtoken')
 const sharp = require('sharp')
 const User = require('../models/user')
-const io = require('../index')
 const userid_to_socket = require('../utils/useridtosocket')
 
 const login = async (req, res) => {
@@ -101,7 +100,7 @@ const edit_details = async (req, res) => {
       }
       if (userid_to_socket[req.userid]?.groups) {
         userid_to_socket[req.userid].groups.forEach(groupid => {
-          io.to(groupid).emit('user-change', {groupid, userid: req.userid, username, status, image: newimage})
+          req.app.get('io').to(groupid).emit('user-change', {groupid, userid: req.userid, username, status, image: newimage})
         })
       }
       res.status(200).send({newimage})
