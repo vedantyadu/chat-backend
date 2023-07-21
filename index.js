@@ -8,6 +8,7 @@ const message_router = require('./routes/message')
 const connect_to_mongoDB = require('./mongoconfig')
 const cookieParser = require("cookie-parser")
 require('dotenv').config()
+const server = require('http').createServer(app)
 
 connect_to_mongoDB()
 
@@ -22,4 +23,6 @@ app.use('/user', user_router)
 app.use('/group', group_router)
 app.use('/message', message_router)
 
-module.exports = app
+server.listen(3000)
+
+module.exports = server

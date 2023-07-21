@@ -4,9 +4,8 @@ const jwt = require('jsonwebtoken')
 const parse_cookie = require('../utils/parsecookie')
 const User = require('../models/user')
 const userid_to_socket = require('../utils/useridtosocket')
-const app = require('../index')
+const server = require('../index')
 
-const server = require('http').createServer(app)
 const io = require("socket.io")(server, {
     cors: {
         origin: process.env.FRONTEND_ORIGIN,
@@ -55,7 +54,5 @@ io.on('connection', async (socket) => {
   })
 
 })
-
-server.listen(3000)
 
 module.exports = io
