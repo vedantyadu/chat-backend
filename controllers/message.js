@@ -2,7 +2,7 @@
 const User = require('../models/user')
 const Group = require('../models/group')
 const Message = require('../models/message')
-const io = require('../socket/socket')
+const io = require('../index.js')
 
 const create_message = async (req, res) => {
   const {groupid, message} = req.body

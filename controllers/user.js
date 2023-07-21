@@ -5,7 +5,7 @@ const hash = require('../utils/hash')
 const jwt = require('jsonwebtoken')
 const sharp = require('sharp')
 const User = require('../models/user')
-const io = require('../socket/socket')
+const io = require('../index.js')
 const userid_to_socket = require('../utils/useridtosocket')
 
 const login = async (req, res) => {
