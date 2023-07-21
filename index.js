@@ -18,7 +18,7 @@ connect_to_mongoDB()
 app.use(express.json())
 app.use(cookieParser())
 app.use(cors({
-  origin: 'https://chat-frontend-ccha.onrender.com',
+  origin: process.env.FRONTEND_ORIGIN,
   credentials: true
 }))
 
