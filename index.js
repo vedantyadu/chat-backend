@@ -9,6 +9,16 @@ const connect_to_mongoDB = require('./mongoconfig')
 const cookieParser = require("cookie-parser")
 require('dotenv').config()
 const server = require('http').createServer(app)
+const add_socket_listiners = require('./socket/socket')
+
+const io = require("socket.io")(server, {
+  cors: {
+      origin: process.env.FRONTEND_ORIGIN,
+      credentials: true
+  }
+})
+
+add_socket_listiners(io)
 
 connect_to_mongoDB()
 
@@ -19,10 +29,11 @@ app.use(cors({
   credentials: true
 }))
 
+
 app.use('/user', user_router)
 app.use('/group', group_router)
 app.use('/message', message_router)
 
 server.listen(3000)
 
-module.exports = server
+module.exports = io

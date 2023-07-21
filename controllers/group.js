@@ -9,7 +9,7 @@ const Group = require('../models/group')
 const Message = require('../models/message')
 const online_user = require('../utils/onlineusers')
 const userid_to_socket = require('../utils/useridtosocket')
-const io = require('../socket/socket')
+const io = require('../index')
 
 
 const is_admin = async (group_id, user_id) => {

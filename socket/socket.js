@@ -4,14 +4,6 @@ const jwt = require('jsonwebtoken')
 const parse_cookie = require('../utils/parsecookie')
 const User = require('../models/user')
 const userid_to_socket = require('../utils/useridtosocket')
-const server = require('../index')
-
-const io = require("socket.io")(server, {
-    cors: {
-        origin: process.env.FRONTEND_ORIGIN,
-        credentials: true
-    }
-})
 
 const auth = async (socket) => {
   try {
@@ -39,20 +31,23 @@ const auth = async (socket) => {
   }
 }
 
-io.on('connection', async (socket) => {
+const add_socket_listiners = (io) => {
 
-  await auth(socket)
+  io.on('connection', async (socket) => {
 
-  socket.on('disconnect', () => {
-    if (socket?.groups) {
-      socket?.groups.map((group) => {
-        io.to(group).emit('user-offline', {userid: socket.userid, groupid: group})
-      })
-      online_user.delete(socket.userid)
-      delete userid_to_socket[socket.userid]
-    }
+    await auth(socket)
+  
+    socket.on('disconnect', () => {
+      if (socket?.groups) {
+        socket?.groups.map((group) => {
+          io.to(group).emit('user-offline', {userid: socket.userid, groupid: group})
+        })
+        online_user.delete(socket.userid)
+        delete userid_to_socket[socket.userid]
+      }
+    })
+  
   })
+}
 
-})
-
-module.exports = io
+module.exports = add_socket_listiners
