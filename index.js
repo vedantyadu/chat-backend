@@ -79,6 +79,6 @@ app.use('/user', user_router)
 app.use('/group', group_router)
 app.use('/message', message_router)
 
-app.listen(3000)
+server.listen(3000)
 
 module.exports = io
