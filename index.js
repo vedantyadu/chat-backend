@@ -16,7 +16,12 @@ const User = require('./models/user')
 const userid_to_socket = require('./utils/useridtosocket')
 
 const server = require('http').Server(app)
-const io = require("socket.io")(server)
+const io = require("socket.io")(server, {
+  cors: {
+    origin: process.env.FRONTEND_ORIGIN,
+    methods: ["GET", "POST"]
+  }
+})
 
 const auth = async (socket) => {
   try {
