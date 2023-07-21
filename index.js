@@ -8,8 +8,6 @@ const message_router = require('./routes/message')
 const connect_to_mongoDB = require('./mongoconfig')
 const cookieParser = require("cookie-parser")
 require('dotenv').config()
-require('./socket/socket')
-
 
 connect_to_mongoDB()
 
