@@ -189,7 +189,7 @@ const add_user = async (req, res) => {
         if (online_user.has(user.id)) {
           userid_to_socket[user.id].join(groupid)
           userid_to_socket[user.id].groups.push(groupid)
-          to(userid_to_socket[user.id].id).emit('group-invite', {
+          io.to(userid_to_socket[user.id].id).emit('group-invite', {
             groupid: groupid,
             details: {name, image, description, admin: false}
           })
