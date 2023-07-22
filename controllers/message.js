@@ -2,6 +2,7 @@
 const User = require('../models/user')
 const Group = require('../models/group')
 const Message = require('../models/message')
+const io = require('../socket/socket')
 
 
 const create_message = async (req, res) => {
@@ -10,7 +11,7 @@ const create_message = async (req, res) => {
     const group = await Group.findById(groupid, {members: [req.userid]})
     if (group) {
       const new_message = await Message.create({message: message, group: groupid, author: req.userid})
-      req.app.get('io').to(groupid).emit('new-message', {details: {author: req.userid, message, messageid: new_message.id, type: new_message.type}, groupid})
+      io.to(groupid).emit('new-message', {details: {author: req.userid, message, messageid: new_message.id, type: new_message.type}, groupid})
       res.status(200).send({messageid: new_message.id, userid: req.userid, groupid})
     }
     else {
@@ -18,7 +19,6 @@ const create_message = async (req, res) => {
     }
   }
   catch (err) {
-    console.log(err)
     res.status(500).send({message: 'Server error while creating message.'})
   }
 }

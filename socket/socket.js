@@ -5,6 +5,7 @@ const parse_cookie = require('../utils/parsecookie')
 const User = require('../models/user')
 const userid_to_socket = require('../utils/useridtosocket')
 
+const io = require("socket.io")()
 
 const auth = async (socket) => {
   try {
@@ -32,23 +33,22 @@ const auth = async (socket) => {
   }
 }
 
-const add_socket_listiners = (io) => {
 
-  io.on('connection', async (socket) => {
+io.on('connection', async (socket) => {
 
     await auth(socket)
-  
+
     socket.on('disconnect', () => {
-      if (socket?.groups) {
+        if (socket?.groups) {
         socket?.groups.map((group) => {
-          io.to(group).emit('user-offline', {userid: socket.userid, groupid: group})
+            io.to(group).emit('user-offline', {userid: socket.userid, groupid: group})
         })
         online_user.delete(socket.userid)
         delete userid_to_socket[socket.userid]
-      }
+        }
     })
-  
-  })
-}
 
-module.exports = add_socket_listiners
+})
+
+
+module.exports = io
