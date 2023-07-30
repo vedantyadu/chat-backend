@@ -1,4 +1,5 @@
 # chat-backend
+A chat app built using the **MERN** stack and **Socket.io**.   
 Demo 📃 [[Link](https://chat-frontend-two-silk.vercel.app)]  
 Frontend 🖼️ [[Link](https://github.com/vedantyadu/chat-frontend)]
 ## Environment variables required for setup  
