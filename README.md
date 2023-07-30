@@ -1,6 +1,6 @@
 # chat-backend
 Demo 📃 [[Link](https://chat-frontend-two-silk.vercel.app)]  
-The frontend can be found here 🖼️ [[Link](https://github.com/vedantyadu/chat-frontend)]
+Frontend 🖼️ [[Link](https://github.com/vedantyadu/chat-frontend)]
 ## Environment variables required for setup  
 A `.env` file is required for setting up the project
 ### The following environment variables are required  
