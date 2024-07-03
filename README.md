@@ -1,7 +1,7 @@
 # chat-backend
 A group chat app built using the **MERN** stack and **Socket.io**.   
 Demo 📃 [[Link](https://chat-frontend-two-silk.vercel.app)]  
-Frontend 🖼️ [[Link](https://github.com/vedantyadu/chat-frontend)]
+Frontend repo 🖼️ [[Link](https://github.com/vedantyadu/chat-frontend)]
 ## Environment variables required for setup  
 A `.env` file is required for setting up the project
 ### The following environment variables are required  
